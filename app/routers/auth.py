@@ -30,7 +30,7 @@ router = APIRouter(
 oauth = OAuth()
 oauth.register(
     name='google',
-    client_id= os. os.environ.get("CLIENT_ID"),
+    client_id=  os.environ.get("CLIENT_ID"),
     client_secret= os.environ.get("CLIENT_SECRET"),
     access_token_url='https://accounts.google.com/o/oauth2/token',
     access_token_params=None,

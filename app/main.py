@@ -3,6 +3,7 @@ from . import models
 from app.database import engine
 from app.routers import auth,projects,todos,users,resources,profile
 from starlette.middleware.sessions import SessionMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 
 description = """
 ideamentor API is used to manage your ideas and  do awesome stuff. 🚀
@@ -39,7 +40,18 @@ app = FastAPI(
     version="0.0.1",
    
 )
+origins = [
+    "http://localhost",
+    "http://localhost:5173",
+]
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.add_middleware(
     SessionMiddleware,
