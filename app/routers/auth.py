@@ -16,7 +16,7 @@ import smtplib
 import pyotp
 from datetime import datetime, timedelta
 from datetime import datetime, timedelta, timezone
-from app.config import CLIENT_ID,CLIENT_SECRET,SECRET_KEY,ALGORITHM,EMAIL_PASSWORD,EMAIL_SENDER,OTP_SECRET_KEY
+# from app.config import CLIENT_ID,CLIENT_SECRET,SECRET_KEY,ALGORITHM,EMAIL_PASSWORD,EMAIL_SENDER,OTP_SECRET_KEY
 
 
 
