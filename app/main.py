@@ -4,6 +4,7 @@ from app.database import engine
 from app.routers import auth,projects,todos,users,resources,profile
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 description = """
 ideamentor API is used to manage your ideas and  do awesome stuff. 🚀
@@ -55,7 +56,7 @@ app.add_middleware(
 
 app.add_middleware(
     SessionMiddleware,
-    secret_key="asdf68s7daf6asdf786asdf6asdfasd46asdf3asdas1df2567gdg7sdf8gsdf9gsd5fg67ds8gsdf9g"  
+    secret_key=os.environ.get("AUTH_SECRET")
 )
 
 models.Base.metadata.create_all(bind=engine)
