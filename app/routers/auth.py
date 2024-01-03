@@ -164,8 +164,6 @@ async def create_new_user(userrequest: schemas.UserRequest, db: db_dependency, o
     except Exception as e:
         # Rollback changes if any exception occurs during user creation or email sending
         db.rollback()
-        # You can log the exception for debugging purposes
-        print(f"An error occurred: {str(e)}")
         # Raise an HTTPException with a 500 Internal Server Error status code and an error message
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create user and send email")
 
