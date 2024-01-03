@@ -16,8 +16,8 @@ import smtplib
 import pyotp
 from datetime import datetime, timedelta
 from datetime import datetime, timedelta, timezone
-import os
-# from app.config import CLIENT_ID,CLIENT_SECRET,SECRET_KEY,ALGORITHM,EMAIL_PASSWORD,EMAIL_SENDER,OTP_SECRET_KEY
+# import os
+from app.config import CLIENT_ID,CLIENT_SECRET,SECRET_KEY,ALGORITHM,EMAIL_PASSWORD,EMAIL_SENDER,OTP_SECRET_KEY
 
 
 
@@ -30,8 +30,8 @@ router = APIRouter(
 oauth = OAuth()
 oauth.register(
     name='google',
-    client_id=  os.environ.get("CLIENT_ID"),
-    client_secret= os.environ.get("CLIENT_SECRET"),
+    client_id= CLIENT_ID,
+    client_secret= CLIENT_SECRET,
     access_token_url='https://accounts.google.com/o/oauth2/token',
     access_token_params=None,
     authorize_url='https://accounts.google.com/o/oauth2/auth',
@@ -40,8 +40,8 @@ oauth.register(
     client_kwargs={'scope': 'openid email profile'}
 )
 
-secret_key =  os.environ.get("SECRET_KEY")
-algorithm =  os.environ.get("ALGORITHM")
+secret_key = SECRET_KEY
+algorithm =  ALGORITHM
 
 
 bcrypt_context = CryptContext(schemes=['bcrypt'],deprecated = 'auto')
@@ -92,10 +92,9 @@ user_dependency = Annotated[dict, Depends(get_current_user)]
 '''-------------------------------------------------otp start---with sign up----------------------------------------------------------'''
 
 
-email_sender = os.environ.get("EMAIL_SENDER")
-email_password =  os.environ.get("EMAIL_PASSWORD")
-otp_secret_key =  os.environ.get("OTP_SECRET_KEY")
-
+email_sender = EMAIL_SENDER
+email_password = EMAIL_PASSWORD
+otp_secret_key =  OTP_SECRET_KEY
 
 
 def otp_generator():
