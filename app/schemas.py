@@ -7,7 +7,7 @@ class UserRequest(BaseModel):
     firstname: str = Field(min_length=3)
     lastname: str = Field(min_length=3)
     username: str = Field(min_length=5)
-    hashed_password: str
+    password: str
     is_active: bool = Field(default=True)
     # profile_image: Optional[str]
 
@@ -28,8 +28,7 @@ class ProjectRequest(BaseModel):
     title: str = Field(..., min_length=3, max_length=255)  
     brief_description: str = Field(..., max_length=225)
     detailed_description: Optional[str] = None
-    created_date: datetime = datetime.utcnow()
-    status: str | None = "completed"
+    status: str | None = "un_completed"
 
 
 class ProjectResponse(ProjectRequest):
