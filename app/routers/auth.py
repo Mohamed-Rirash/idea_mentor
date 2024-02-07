@@ -55,11 +55,20 @@ def authenticate_user(db, password: str, username: str = None):
 
 
 # step 2: create access token
-def create_access_token(username: str, user_id: int,expires_delta = timedelta):
-    encode ={'sub': username, 'id': user_id}
-    expires = datetime.utcnow() + expires_delta
-    encode.update({'exp': expires})
-    return jwt.encode(encode, secret_key,algorithm=algorithm)
+def create_access_token(username: str, user_id: int):
+    access_token_expires = timedelta(minutes=15) 
+    refresh_token_expires = timedelta(days=7)  
+
+    access_token = jwt.encode(
+        {"sub": username, "id": user_id, "exp": datetime.utcnow() + access_token_expires},
+        SECRET_KEY, algorithm=ALGORITHM)
+
+    refresh_token = jwt.encode(
+        {"sub": username, "id": user_id, "exp": datetime.utcnow() + refresh_token_expires},
+        SECRET_KEY, algorithm=ALGORITHM)
+
+    return access_token, refresh_token
+
 
 
 
@@ -239,7 +248,7 @@ async def enter_the_code(code: int, db: db_dependency):
 
 # login 
 
-@router.post("/token", response_model=schemas.Token, summary="Login endpoint")
+@router.post("/token", response_model=schemas.TokenResponse, summary="Login endpoint")
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
                                  db: db_dependency):
     '''
@@ -259,11 +268,25 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
 
-    token = create_access_token(username=user.username, user_id=user.id, expires_delta=timedelta(minutes=20))
-    return {"access_token": token, "token_type": "bearer"}
+    access_token, refresh_token = create_access_token(username=user.username, user_id=user.id)
+    return schemas.TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
 
    
-# google oauth
+
+@router.post("/refresh", summary="Refresh access token")
+async def refresh_token(refresh_token: str, db: db_dependency):
+    try:
+        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        user_id: int = payload.get("id")
+        if username is None or user_id is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        
+        new_access_token, new_refresh_token = create_access_token(username, user_id)
+        return schemas.TokenResponse(access_token=new_access_token, refresh_token=new_refresh_token, token_type="bearer")
+    except jwt.JWTError:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid token or expired token")
+
 
 
 

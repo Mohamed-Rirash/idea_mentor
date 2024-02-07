@@ -70,9 +70,12 @@ class ResourceResponse(ResourceRequest):
     resource_type:str
     todo_id: int
 
-class Token(BaseModel):
+
+class TokenResponse(BaseModel):
     access_token: str
-    token_type: str
+    refresh_token: str
+    token_type: str = "bearer"
+
 
 class OtpSchema(BaseModel):
     code: int
