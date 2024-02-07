@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from . import models
 from app.database import engine
-from app.routers import auth,projects,todos,users,resources,profile
+from app.routers import auth,projects,todos,users,resources,profile,google_auth
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -62,6 +62,7 @@ app.add_middleware(
 models.Base.metadata.create_all(bind=engine)
 
 app.include_router(auth.router)
+app.include_router(google_auth.router)
 app.include_router(users.router)
 app.include_router(projects.router)
 app.include_router(todos.router)

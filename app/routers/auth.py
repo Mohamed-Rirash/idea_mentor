@@ -27,18 +27,7 @@ router = APIRouter(
   
 )
 
-oauth = OAuth()
-oauth.register(
-    name='google',
-    client_id= CLIENT_ID,
-    client_secret= CLIENT_SECRET,
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    access_token_params=None,
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-    authorize_params=None,
-    api_base_url='https://www.googleapis.com/oauth2/v1/',
-    client_kwargs={'scope': 'openid email profile'}
-)
+
 
 secret_key = SECRET_KEY
 algorithm =  ALGORITHM
@@ -99,7 +88,6 @@ otp_secret_key =  OTP_SECRET_KEY
 
 def otp_generator():
     totp = pyotp.TOTP(otp_secret_key)
-    print(otp_secret_key)
     return totp.now()
 
 async def send_verification_email(receiver_email, otp):
@@ -260,62 +248,25 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
     - Username
     - Email
     ** with password **
-    '''
-    try:
-        user = None
-        if form_data.username:
-            user = authenticate_user(username=form_data.username, password=form_data.password, db=db)
-        elif form_data.email:
-            user = authenticate_user(email=form_data.email, password=form_data.password, db=db)
+'''
 
-        if not user:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    
+    if form_data.username:
+        user = authenticate_user(username=form_data.username, password=form_data.password, db=db)
+    elif form_data.email:
+        user = authenticate_user(email=form_data.email, password=form_data.password, db=db)
 
-        token = create_access_token(username=user.username, user_id=user.id, expires_delta=timedelta(minutes=20))
-        return {"access_token": token, "token_type": "bearer"}
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
 
-    except Exception as e:
-        # Log the exception for debugging purposes
-        # print(f"An error occurred during login: {str(e)}")
-        # Raise a more general HTTP 500 server error for unhandled exceptions
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error during login")
+    token = create_access_token(username=user.username, user_id=user.id, expires_delta=timedelta(minutes=20))
+    return {"access_token": token, "token_type": "bearer"}
 
+   
 # google oauth
 
 
 
-
-@router.get('/login/google', summary="Redirects to Google for login")
-async def login_via_google(request: Request):
-    try:
-        redirect_uri = request.url_for('auth_via_google')
-        return await oauth.google.authorize_redirect(request, redirect_uri)
-    except Exception as e:
-        print(f"Error during Google login redirect: {str(e)}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error redirecting to Google for login")
-
-@router.get('/auth/google', summary="Google OAuth callback endpoint")
-async def auth_via_google(request: Request, db: db_dependency):
-    try:
-        token = await oauth.google.authorize_access_token(request)
-        user_info = await oauth.google.parse_id_token(request, token)
-
-        email = user_info.get('email')
-        first_name = user_info.get('given_name', '')
-        last_name = user_info.get('family_name', '')
-
-        user = get_or_create_user_from_google_data(email, first_name, last_name, db)
-        if not user:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User creation failed")
-
-        access_token = create_access_token(username=user.username, user_id=user.id)  # Use your existing token creation logic
-        return {"access_token": access_token, "token_type": "bearer"}
-
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        print(f"Error during Google authentication: {str(e)}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error during Google authentication")
 
 
 

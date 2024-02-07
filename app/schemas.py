@@ -7,7 +7,7 @@ class UserRequest(BaseModel):
     firstname: str = Field(min_length=3)
     lastname: str = Field(min_length=3)
     username: str = Field(min_length=5)
-    hashed_password: str = Field(min_length=8)
+    hashed_password: str
     is_active: bool = Field(default=True)
     # profile_image: Optional[str]
 

@@ -35,4 +35,3 @@ async def auth(request: Request):
     token = await oauth.google.authorize_access_token(request)
     user = token['userinfo']
     return dict(user)
-
