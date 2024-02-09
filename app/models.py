@@ -19,7 +19,7 @@ class User(Base):
     lastname = Column(String)
     username = Column(String, unique=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=False)
     
     projects = relationship('Project', back_populates='user')
     images = relationship('ImageModel', back_populates='user')

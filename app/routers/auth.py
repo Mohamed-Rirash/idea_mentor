@@ -39,18 +39,18 @@ oauth2_bearer = OAuth2PasswordBearer(tokenUrl='auth/token')
 
 
 # step 1: authenticate user
-def authenticate_user(db, password: str, username: str = None):
-    user = None
-    if username and '@' in username:
-        user = db.query(models.User).filter(models.User.email == username).first()
-    elif username:
-        user = db.query(models.User).filter(models.User.username == username).first()
+def authenticate_user(username_or_email: str, password: str, db: db_dependency):
+    # Check if the input is an email or username based on the presence of '@'
+    if '@' in username_or_email:
+        user = db.query(models.User).filter(models.User.email == username_or_email).first()
     else:
-        return False
+        user = db.query(models.User).filter(models.User.username == username_or_email).first()
 
+    
     if user and bcrypt_context.verify(password, user.hashed_password):
         return user
-    return False
+    return None
+
 
 
 
@@ -125,27 +125,24 @@ async def send_verification_email(receiver_email, otp):
 
 @router.post("/new_user", status_code=status.HTTP_201_CREATED, summary="Create new user account / sign up")
 async def create_new_user(userrequest: schemas.UserRequest, db: db_dependency, otp: int = Depends(otp_generator)):
-    
     '''  ## Sign Up
 
-    This endpoint is used for creating a new user account with the following fields:
-
-    - **email**: "user@example.com" (_unique_)
-    - **firstname**: "string"
-    - **lastname**: "string"
-    - **username**: "string" (_unique_)
-    - **password**: "string" (_password with validation in fields_)
-    - **is_active**: true (_it is by default true; no need for manipulation_)
+    This endpoint is used for creating a new user account.
     '''
 
+    # Check if the user already exists based on email or username
+    existing_user = db.query(models.User).filter((models.User.email == userrequest.email) | (models.User.username == userrequest.username)).first()
+    if existing_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already registered with the given email or username")
+    
     try:
         create_user_model = models.User(
             firstname=userrequest.firstname,
             lastname=userrequest.lastname,
             email=userrequest.email,
             username=userrequest.username,
-            hashed_password=bcrypt_context.hash(userrequest.hashed_password),
-            is_active=userrequest.is_active
+            hashed_password=bcrypt_context.hash(userrequest.password),
+            is_active=False
         )
         db.add(create_user_model)
         db.commit()
@@ -159,11 +156,9 @@ async def create_new_user(userrequest: schemas.UserRequest, db: db_dependency, o
 
         return {"message": "Email sent successfully with OTP!"}
     except Exception as e:
-        # Rollback changes if any exception occurs during user creation or email sending
-        db.rollback()
-        # Raise an HTTPException with a 500 Internal Server Error status code and an error message
+        db.rollback()  # Rollback changes if any exception occurs
+        # For debugging purposes, you might want to log the exception here
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create user and send email")
-
 @router.post("/resend_otp", status_code=status.HTTP_200_OK, summary="Resend OTP to user's email")
 async def resend_otp(email: str, db: db_dependency):
 
@@ -247,31 +242,32 @@ async def enter_the_code(code: int, db: db_dependency):
 
 
 # login 
-
+# Assuming authenticate_user expects parameters like (username_or_email, password, db)
 @router.post("/token", response_model=schemas.TokenResponse, summary="Login endpoint")
-async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-                                 db: db_dependency):
+async def login_for_access_token( db: db_dependency, form_data: OAuth2PasswordRequestForm = Depends()
+                                ):
     '''
     ## Login
     #### It can verify both:
     - Username
     - Email
     ** with password **
-'''
+    '''
 
-    
-    if form_data.username:
-        user = authenticate_user(username=form_data.username, password=form_data.password, db=db)
-    elif form_data.email:
-        user = authenticate_user(email=form_data.email, password=form_data.password, db=db)
+    # Since OAuth2PasswordRequestForm does not directly provide a 'username' field,
+    # we assume 'username' is used here to mean either an actual username or email.
+    # So, the form_data.username will contain either the username or the email.
+    user = authenticate_user(username_or_email=form_data.username, password=form_data.password, db=db)
 
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
 
-    access_token, refresh_token = create_access_token(username=user.username, user_id=user.id)
-    return schemas.TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Please activate your account")
 
-   
+    access_token, refresh_token = create_access_token(username=user.username, user_id=user.id)
+
+    return schemas.TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
 
 @router.post("/refresh", summary="Refresh access token")
 async def refresh_token(refresh_token: str, db: db_dependency):

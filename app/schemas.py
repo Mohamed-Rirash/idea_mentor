@@ -8,7 +8,7 @@ class UserRequest(BaseModel):
     lastname: str = Field(min_length=3)
     username: str = Field(min_length=5)
     password: str
-    is_active: bool = Field(default=True)
+    is_active: bool = Field(default=False)
     # profile_image: Optional[str]
 
 class UserResponse(BaseModel):
