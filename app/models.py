@@ -5,10 +5,6 @@ from datetime import datetime
 from sqlalchemy.sql import func
 
 
-
-
-
-
 class User(Base):
     __tablename__ = 'users'
     

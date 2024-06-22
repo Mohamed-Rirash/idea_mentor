@@ -135,30 +135,30 @@ async def create_new_user(userrequest: schemas.UserRequest, db: db_dependency, o
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already registered with the given email or username")
     
-    try:
-        create_user_model = models.User(
-            firstname=userrequest.firstname,
-            lastname=userrequest.lastname,
-            email=userrequest.email,
-            username=userrequest.username,
-            hashed_password=bcrypt_context.hash(userrequest.password),
-            is_active=False
-        )
-        db.add(create_user_model)
-        db.commit()
+    # try:
+    create_user_model = models.User(
+        firstname=userrequest.firstname,
+        lastname=userrequest.lastname,
+        email=userrequest.email,
+        username=userrequest.username,
+        hashed_password=bcrypt_context.hash(userrequest.password),
+        is_active=False
+    )
+    db.add(create_user_model)
+    db.commit()
 
-        await send_verification_email(create_user_model.email, otp)
+    await send_verification_email(create_user_model.email, otp)
 
-        # Store the OTP and email in your database with an expiration time
-        otp_record = models.OTPRecord(email=userrequest.email, otp=otp)
-        db.add(otp_record)
-        db.commit()
+    # Store the OTP and email in your database with an expiration time
+    otp_record = models.OTPRecord(email=userrequest.email, otp=otp)
+    db.add(otp_record)
+    db.commit()
 
-        return {"message": "Email sent successfully with OTP!"}
-    except Exception as e:
-        db.rollback()  # Rollback changes if any exception occurs
-        # For debugging purposes, you might want to log the exception here
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create user and send email")
+    return {"message": "Email sent successfully with OTP!"}
+    # except Exception as e:
+    #     db.rollback()  # Rollback changes if any exception occurs
+    #     # For debugging purposes, you might want to log the exception here
+    #     raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create user and send email")
 @router.post("/resend_otp", status_code=status.HTTP_200_OK, summary="Resend OTP to user's email")
 async def resend_otp(email: str, db: db_dependency):
 
